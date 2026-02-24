@@ -30,5 +30,5 @@ export default function handler(req, res) {
   const fateResult = fateChart[clvlNum][pbldNum];
   const fateLabel = fateResultLabel[fateResult];
   
-  res.status(200).json({ fate: fateLabel });
+  res.status(200).json({ fate: fateResult, label: fateLabel });
 }
