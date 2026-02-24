@@ -135,41 +135,6 @@ export const randomEventFocusTable = [
   { range: [86, 100], result: "Current Context" }
 ];
 
-// Função auxiliar para obter resultado da Focus Table
-export const getEventFocus = () => {
-  const roll = Math.floor(Math.random() * 100) + 1; // Gera número entre 1-100
-  
-  const entry = randomEventFocusTable.find(
-    item => roll >= item.range[0] && roll <= item.range[1]
-  );
-  
-  return entry ? { roll, result: entry.result } : null;
-};
-
-
-
-//função para obter resultado da Fate Chart
-export const getFateChartResult = (Chaos, possibility) => {
-  if (Chaos < 0 || Chaos > 8 || possibility < 0 || possibility > 8) {
-    throw new Error("Chaos and Possibility must be between 0 and 8");
-  }
-  // gerar um numero entre 1 e 100
-  const roll = Math.floor(Math.random() * 100) + 1;
-  const thresholds = fateChart[Chaos][possibility];
-  
-  //o trio de numeros representa os limites para cada resultado +sim, sim, nõo, +não
-  //+sim [N1] sim [N2] nõo [N3] +não
-  if (roll <= thresholds[0]) {
-    return { roll, result: fateResultLabel[1] };
-  } else if (roll <= thresholds[1]) {
-    return { roll, result: fateResultLabel[0] };
-  } else if (roll <= thresholds[2]) {
-    return { roll, result: fateResultLabel[2] };
-  } else {
-    return { roll, result: fateResultLabel[3] };
-  }
-}
-
 const mythicMeaningTables = {
   actions: {
     table1: [
