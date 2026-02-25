@@ -34,7 +34,7 @@ export default function handler(req, res) {
   // Check if this CF triggers a random event
   const hasRE = checkRandomEvent(roll, chaosLevel);
   
-  // Generate one random event for the entire route
+  // Generate one random event only if RE was triggered
   const randomEvent = hasRE ? generateRandomEvent() : null;
   
   res.status(200).json({
