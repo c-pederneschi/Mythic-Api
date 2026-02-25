@@ -233,6 +233,7 @@ export const mythicMeaningTables = {
       "Waste"
     ],
     table2: [
+      null,
       "Advantage",
       "Adversity",
       "Agreement",
@@ -337,6 +338,7 @@ export const mythicMeaningTables = {
   },
   descriptions: {
     descriptor1: [
+      null,
       "Adventurously",
       "Aggressively",
       "Anxiously",
@@ -439,6 +441,7 @@ export const mythicMeaningTables = {
       "Yieldingly"
     ],
     descriptor2: [
+      null,
       "Abnormal",
       "Amusing",
       "Artificial",
