@@ -54,17 +54,18 @@ export default async function handler(req, res) {
     })
 
     // 2. Buscar histórico para contexto (apenas últimas 6 mensagens para reduzir tokens)
-    const history = await prisma.message.findMany({
-      orderBy: { createdAt: 'asc' },
+    const recentHistoryDesc = await prisma.message.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 100,
     })
-    const recentHistory = history.slice(-6)
+    const recentHistory = recentHistoryDesc.reverse()
 
     // 3. Montar prompt simples para Gemini usando o histórico recente
     const historyText = recentHistory
       .map((m) => `${m.author === 'user' ? 'Usuário' : 'Assistente'}: ${m.content}`)
       .join('\n')
 
-    const prompt = `${historyText}\nUsuário: ${message}\nAssistente:`
+    const prompt = `${historyText}\nAssistente:`
 
     // 4. Chamar Gemini via REST com o mínimo de tokens possível
     const apiKey = process.env.GEMINI_API_KEY
@@ -110,7 +111,15 @@ export default async function handler(req, res) {
 
     const geminiData = await geminiResponse.json()
 
-    console.log('Gemini API response:', JSON.stringify(geminiData, null, 2))
+    if (process.env.NODE_ENV !== 'production') {
+      const usage = geminiData?.usageMetadata || {}
+      console.log('Gemini API usage:', {
+        model: geminiData?.modelVersion || 'unknown',
+        promptTokens: usage.promptTokenCount ?? 0,
+        completionTokens: usage.candidatesTokenCount ?? 0,
+        totalTokens: usage.totalTokenCount ?? 0,
+      })
+    }
 
     const assistantContent =
       geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ||

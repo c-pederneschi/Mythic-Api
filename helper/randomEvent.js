@@ -52,15 +52,15 @@ export function generateRandomEvent() {
   // Get action from table1 (index 0 is null, so direct indexing works)
   const action = mythicMeaningTables.actions.table1[actionRoll1] || "Continue";
   
-  // Get subject from table2 (index 0 maps to roll 1)
-  const subject = mythicMeaningTables.actions.table2[actionRoll2 - 1] || "Goal";
+  // Get subject from table2 (index 0 is null, so direct indexing works)
+  const subject = mythicMeaningTables.actions.table2[actionRoll2] || "Goal";
   
   // Step 3: Also roll on Descriptions table for additional meaning
   const descRoll1 = Math.floor(Math.random() * 100) + 1;
   const descRoll2 = Math.floor(Math.random() * 100) + 1;
   
-  const descriptor1 = mythicMeaningTables.descriptions.descriptor1[descRoll1 - 1] || "Naturally";
-  const descriptor2 = mythicMeaningTables.descriptions.descriptor2[descRoll2 - 1] || "Normal";
+  const descriptor1 = mythicMeaningTables.descriptions.descriptor1[descRoll1] || "Naturally";
+  const descriptor2 = mythicMeaningTables.descriptions.descriptor2[descRoll2] || "Normal";
   
   return {
     focus: {
