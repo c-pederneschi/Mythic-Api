@@ -1,4 +1,4 @@
-// Prisma schema para chat com OpenAI
+// Prisma schema para chat com Gemini
 
 generator client {
   provider = "prisma-client-js"
@@ -31,4 +31,15 @@ model TokenUsage {
   createdAt       DateTime @default(now())
 
   @@map("token_usage")
+}
+
+// AdventureState - estado simples da aventura (evoluível para login no futuro)
+model AdventureState {
+  id         Int      @id @default(autoincrement())
+  profileKey String   @unique @default("anonymous")
+  chaosFactor Int     @default(5)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("adventure_state")
 }

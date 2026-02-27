@@ -7,17 +7,37 @@ export default function ChatPage() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [cooldownSeconds, setCooldownSeconds] = useState(0)
+  const [tokenUsage, setTokenUsage] = useState({ usedTokens: 0, usedRequestsToday: 0, limit: null, percentUsed: 0 })
   const messagesEndRef = useRef(null)
 
   // Carregar mensagens ao montar
   useEffect(() => {
     fetchMessages()
+    fetchTokenUsage()
   }, [])
 
   // Auto-scroll para última mensagem
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  useEffect(() => {
+    if (cooldownSeconds <= 0) return
+
+    const timer = setInterval(() => {
+      setCooldownSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          return 0
+        }
+
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [cooldownSeconds])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -37,6 +57,28 @@ export default function ChatPage() {
     }
   }
 
+  const fetchTokenUsage = async () => {
+    try {
+      const res = await fetch('/api/chat/usage')
+
+      if (!res.ok) {
+        return
+      }
+
+      const data = await res.json()
+      const daily = data?.daily || {}
+
+      setTokenUsage({
+        usedTokens: daily.usedTokens ?? 0,
+        usedRequestsToday: daily.usedRequestsToday ?? 0,
+        limit: daily.limit ?? null,
+        percentUsed: daily.percentUsed ?? 0,
+      })
+    } catch (usageError) {
+      console.error('Error fetching token usage:', usageError)
+    }
+  }
+
   const handleSendMessage = async (e) => {
     e.preventDefault()
 
@@ -45,7 +87,7 @@ export default function ChatPage() {
     setLoading(true)
 
     try {
-      // Enviar mensagem para OpenAI
+      // Enviar mensagem para Gemini
       const res = await fetch('/api/chat/message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -55,13 +97,26 @@ export default function ChatPage() {
       })
 
       if (res.ok) {
-        const { userMessage, assistantMessage } = await res.json()
+        const { userMessage, assistantMessage, resetTriggered } = await res.json()
+
+        if (resetTriggered) {
+          setInput('')
+          setError(null)
+          window.location.reload()
+          return
+        }
+
         setMessages((prev) => [...prev, userMessage, assistantMessage])
         setInput('')
         setError(null)
+        fetchTokenUsage()
       } else {
         const err = await res.json()
         console.error('Error:', err)
+
+        if (typeof err.retryAfterSeconds === 'number' && err.retryAfterSeconds > 0) {
+          setCooldownSeconds(Math.ceil(err.retryAfterSeconds))
+        }
 
         const friendly =
           err.details ||
@@ -90,7 +145,39 @@ export default function ChatPage() {
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
       }}>
         <h1 style={{ margin: 0 }}>Mythic Chat</h1>
-        <p style={{ margin: '5px 0 0 0', fontSize: '14px', opacity: 0.9 }}>Prepare para OpenAI 🚀</p>
+        <p style={{ margin: '5px 0 10px 0', fontSize: '14px', opacity: 0.9 }}>Prepare para Gemini 🚀</p>
+        <div style={{ maxWidth: '420px', margin: '0 auto', textAlign: 'left' }}>
+          <div style={{ fontSize: '12px', marginBottom: '6px', opacity: 0.95 }}>
+            Requisições hoje: {tokenUsage.usedRequestsToday}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+            <span>Uso diário de tokens</span>
+            <span>
+              {`${Number(tokenUsage.percentUsed || 0).toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}%`}
+            </span>
+          </div>
+          <div
+            style={{
+              width: '100%',
+              height: '10px',
+              borderRadius: '999px',
+              backgroundColor: 'rgba(255, 255, 255, 0.25)',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                width: `${Math.min(tokenUsage.percentUsed, 100)}%`,
+                height: '100%',
+                backgroundColor: tokenUsage.percentUsed >= 76 ? '#ffb347' : '#7dffb3',
+                transition: 'width 0.3s ease',
+              }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Messages Container */}
@@ -213,23 +300,27 @@ export default function ChatPage() {
           />
           <button
             type="submit"
-            disabled={loading || !input.trim()}
+            disabled={loading || cooldownSeconds > 0 || !input.trim()}
             style={{
               padding: '12px 24px',
               backgroundColor: '#0066cc',
               color: 'white',
               border: 'none',
               borderRadius: '24px',
-              cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
+              cursor: loading || cooldownSeconds > 0 || !input.trim() ? 'not-allowed' : 'pointer',
               fontSize: '14px',
               fontWeight: 'bold',
               transition: 'background-color 0.3s',
-              opacity: loading || !input.trim() ? 0.6 : 1
+              opacity: loading || cooldownSeconds > 0 || !input.trim() ? 0.6 : 1
             }}
-            onMouseEnter={(e) => !loading && !input.trim() ? null : e.target.style.backgroundColor = '#0052a3'}
+            onMouseEnter={(e) =>
+              !loading && cooldownSeconds === 0 && input.trim()
+                ? (e.target.style.backgroundColor = '#0052a3')
+                : null
+            }
             onMouseLeave={(e) => e.target.style.backgroundColor = '#0066cc'}
           >
-            {loading ? '⏳' : '➤ Enviar'}
+            {loading ? '⏳' : cooldownSeconds > 0 ? `⏱ ${cooldownSeconds}s` : '➤ Enviar'}
           </button>
         </form>
       </div>
