@@ -168,7 +168,7 @@ async function callGemini({ apiKey, prompt, forceTextAnswer = false }) {
           parts: [{ text: systemText }],
         },
         generationConfig: {
-          maxOutputTokens: 512,
+          maxOutputTokens: 2000,
           temperature: 0.7,
         },
       }),
